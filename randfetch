@@ -1,0 +1,159 @@
+#!/usr/bin/env bash
+
+# ==========================================
+# RANDFETCH - Randomized Terminal Aesthetics
+# ==========================================
+
+# 1. RANDOM COLORS
+FG_COLOR=$((31 + RANDOM % 6))
+ACC_COLOR=$((31 + RANDOM % 6))
+STYLE_CODE=$((RANDOM % 2))
+
+TEXT_COLOR="\e[${STYLE_CODE};${FG_COLOR}m"
+ACCENT_COLOR="\e[0;${ACC_COLOR}m"
+RESET="\e[0m"
+
+# 2. RANDOM GREETINGS
+GREETINGS=(
+    "new bleood drop"
+    "ai dropdihing"
+    "..."
+    "but he never came"
+    "terminal wokemaxxing"
+    "flushing le bourgeosie"
+    "ready to mingle"
+    "mandy's 3 miles away"
+    "RANDIHS'S 6 miles away"
+    "new osamson drop"
+    "new slayr drop"
+    "graclih wokedih queendih vladih"
+    "femboy wants a pat hmph"
+    "glory to le proletariat"
+    "slayr aint a burger"
+    "iwatodoi dorm"
+)
+
+RAND_GREET="${GREETINGS[RANDOM % ${#GREETINGS[@]}]}"
+
+# 3. RANDOM BORDERS
+BORDERS_TOP=(
+    "┌─────┐"
+    "┏━━━━━┓"
+    "╭─────╮"
+    "[====]"
+    "«««»»»"
+)
+
+BORDERS_BOT=(
+    "└─────┘"
+    "┗━━━━━┛"
+    "╰─────╯"
+    "[====]"
+    "«««»»»"
+)
+
+BORDER_IDX=$((RANDOM % ${#BORDERS_TOP[@]}))
+B_TOP="${BORDERS_TOP[BORDER_IDX]}"
+B_BOT="${BORDERS_BOT[BORDER_IDX]}"
+
+# 4. RANDOM LAYOUT
+LAYOUT_NUM=$((1 + RANDOM % 3))
+
+case "$LAYOUT_NUM" in
+    1)
+        echo -e "${ACCENT_COLOR}${B_TOP}${RESET}"
+        echo -e " ${TEXT_COLOR}📡 $RAND_GREET${RESET}"
+        echo -e "  User: $(whoami) @ $(hostname)"
+        echo -e "${ACCENT_COLOR}${B_BOT}${RESET}"
+        ;;
+
+    2)
+        echo -e "${TEXT_COLOR}⚡ $RAND_GREET ⚡${RESET}"
+        echo -e "${ACCENT_COLOR}_━_-_-_-_-_${RESET}"
+        echo -e "  User: \e[1m$(whoami)\e[0m | Time: \e[2m$(date +'%H:%M:%S')\e[0m"
+        ;;
+
+    3)
+        echo -e "${ACCENT_COLOR}[>>>]${RESET} ${TEXT_COLOR}${RAND_GREET}${RESET}"
+        echo -e "  > ACCESSING: /home/$(whoami)"
+        echo -e "  > TIMESTAMP: $(date +'%Y-%m-%d')"
+        ;;
+esac
+
+echo ""
+
+# 5. RANDOM PATTERN SETTINGS
+PATTERN_TYPE=$((1 + RANDOM % 4))
+ROWS=$((3 + RANDOM % 3))
+COLS=40
+
+# 6. RANDOM VISUAL PATTERNS
+case "$PATTERN_TYPE" in
+
+    # Digital Matrix Blocks
+    1)
+        CHAR_SET=("░" "▒" "▓" "█" "▀" "▄" " ")
+
+        for ((i = 0; i < ROWS; i++)); do
+            line="  "
+
+            for ((j = 0; j < COLS; j++)); do
+                char="${CHAR_SET[RANDOM % ${#CHAR_SET[@]}]}"
+                line+="$char"
+            done
+
+            echo -e "\e[$((RANDOM % 2));$((31 + RANDOM % 6))m${line}${RESET}"
+        done
+        ;;
+
+    # Retro Vaporwave Waves & Slashes
+    2)
+        CHAR_SET=("/" "\\" "|" "_" "-" "~" " ")
+
+        for ((i = 0; i < ROWS; i++)); do
+            line="  "
+
+            for ((j = 0; j < COLS; j++)); do
+                char="${CHAR_SET[RANDOM % ${#CHAR_SET[@]}]}"
+                line+="$char"
+            done
+
+            echo -e "${ACCENT_COLOR}${line}${RESET}"
+        done
+        ;;
+
+    # Abstract Starfield / Circuit Board
+    3)
+        CHAR_SET=("." "*" "+" "o" "•" " " " " " ")
+
+        for ((i = 0; i < ROWS; i++)); do
+            line="  "
+
+            for ((j = 0; j < COLS; j++)); do
+                char="${CHAR_SET[RANDOM % ${#CHAR_SET[@]}]}"
+                line+="$char"
+            done
+
+            echo -e "${TEXT_COLOR}${line}${RESET}"
+        done
+        ;;
+
+    # Modern Glitch Strips
+    4)
+        STRIPS=(
+            "██████▒▒▒▒▒"
+            "░░░░░▓▓▓▓▓"
+            "▄▄▄▄▄▀▀▀▀▀"
+            "━━━━━╳╳╳╳╳"
+        )
+
+        for ((i = 0; i < ROWS; i++)); do
+            strip1="${STRIPS[RANDOM % ${#STRIPS[@]}]}"
+            strip2="${STRIPS[RANDOM % ${#STRIPS[@]}]}"
+
+            echo -e "  \e[$((RANDOM % 2));$((31 + RANDOM % 6))m${strip1}${strip2}${RESET}"
+        done
+        ;;
+esac
+
+echo ""
