@@ -1,0 +1,18 @@
+# for bash
+if [[ $- == *i* ]] && command  -v randfetch >/dev/null 2>&1; then 
+  randfetch
+fi
+
+# for fish
+if status is-interactive
+    if command -v randfetch >/dev/null
+        randfetch
+    end
+end
+# add RANDFETCH on top of each to organize it
+
+
+#add this if randfetch doesnt work
+if command -n randfetch >/dev/null
+  echo "ngn ur shit isnt working and idk how to fix it ngn cus all i do is use chatgot"
+end
