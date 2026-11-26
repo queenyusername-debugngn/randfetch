@@ -1,19 +1,175 @@
 #!/usr/bin/env bash
 
 # ==========================================
-# RANDFETCH - Randomized Terminal Aesthetics
+# RANDFETCH v0.2
+# Randomized Terminal Aesthetics
 # ==========================================
 
-# 1. RANDOM COLORS
-FG_COLOR=$((31 + RANDOM % 6))
-ACC_COLOR=$((31 + RANDOM % 6))
-STYLE_CODE=$((RANDOM % 2))
+VERSION="0.2.0"
 
-TEXT_COLOR="\e[${STYLE_CODE};${FG_COLOR}m"
-ACCENT_COLOR="\e[0;${ACC_COLOR}m"
+# ==========================================
+# 1. ARGUMENTS
+# ==========================================
+
+FORCED_PATTERN=""
+FORCED_LAYOUT=""
+PALETTE=""
+NO_COLOR=0
+MINIMAL=0
+SEED=""
+
+show_help() {
+    cat <<EOF
+randfetch v$VERSION - Randomized Terminal Aesthetics
+
+Usage: randfetch [options]
+
+Options:
+  --seed N          Reproduce a random sequence
+  --pattern N       Force pattern (1-10)
+  --layout N        Force layout (1-3)
+  --palette NAME    Choose a color palette
+  --no-color        Disable colors
+  --minimal         Minimal output
+  --version         Display version
+  --help            Display help
+
+Palettes:
+  red, green, blue, purple, cyan, rainbow
+
+Examples:
+  randfetch
+  randfetch --pattern 4
+  randfetch --palette purple
+  randfetch --seed 42
+  randfetch --layout 2 --pattern 7
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --seed)
+            SEED="$2"
+            shift 2
+            ;;
+        --pattern)
+            FORCED_PATTERN="$2"
+            shift 2
+            ;;
+        --layout)
+            FORCED_LAYOUT="$2"
+            shift 2
+            ;;
+        --palette)
+            PALETTE="$2"
+            shift 2
+            ;;
+        --no-color)
+            NO_COLOR=1
+            shift
+            ;;
+        --minimal)
+            MINIMAL=1
+            shift
+            ;;
+        --version)
+            echo "randfetch v$VERSION"
+            exit 0
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+# ==========================================
+# 2. VALIDATION
+# ==========================================
+
+if [[ -n "$SEED" ]]; then
+    if [[ ! "$SEED" =~ ^[0-9]+$ ]]; then
+        echo "Error: seed must be a number."
+        exit 1
+    fi
+    RANDOM="$SEED"
+fi
+
+if [[ -n "$FORCED_PATTERN" ]]; then
+    if [[ ! "$FORCED_PATTERN" =~ ^[0-9]+$ ]] ||
+       (( FORCED_PATTERN < 1 || FORCED_PATTERN > 10 )); then
+        echo "Error: pattern must be between 1 and 10."
+        exit 1
+    fi
+fi
+
+if [[ -n "$FORCED_LAYOUT" ]]; then
+    if [[ ! "$FORCED_LAYOUT" =~ ^[0-9]+$ ]] ||
+       (( FORCED_LAYOUT < 1 || FORCED_LAYOUT > 3 )); then
+        echo "Error: layout must be between 1 and 3."
+        exit 1
+    fi
+fi
+
+# ==========================================
+# 3. COLOR PALETTES
+# ==========================================
+
+RED=(31 91)
+GREEN=(32 92)
+BLUE=(34 94)
+PURPLE=(35 95)
+CYAN=(36 96)
+RAINBOW=(31 32 33 34 35 36)
+
+case "$PALETTE" in
+    red)     COLORS=("${RED[@]}") ;;
+    green)   COLORS=("${GREEN[@]}") ;;
+    blue)    COLORS=("${BLUE[@]}") ;;
+    purple)  COLORS=("${PURPLE[@]}") ;;
+    cyan)    COLORS=("${CYAN[@]}") ;;
+    rainbow) COLORS=("${RAINBOW[@]}") ;;
+    "")
+        PALETTE=("red" "green" "blue" "purple" "cyan" "rainbow")
+        PALETTE="${PALETTE[RANDOM % ${#PALETTE[@]}]}"
+
+        case "$PALETTE" in
+            red)     COLORS=("${RED[@]}") ;;
+            green)   COLORS=("${GREEN[@]}") ;;
+            blue)    COLORS=("${BLUE[@]}") ;;
+            purple)  COLORS=("${PURPLE[@]}") ;;
+            cyan)    COLORS=("${CYAN[@]}") ;;
+            rainbow) COLORS=("${RAINBOW[@]}") ;;
+        esac
+        ;;
+    *)
+        echo "Error: invalid palette '$PALETTE'"
+        exit 1
+        ;;
+esac
+
+FG_COLOR="${COLORS[RANDOM % ${#COLORS[@]}]}"
+ACC_COLOR="${COLORS[RANDOM % ${#COLORS[@]}]}"
+
+TEXT_COLOR="\e[0;${FG_COLOR}m"
+ACCENT_COLOR="\e[1;${ACC_COLOR}m"
 RESET="\e[0m"
 
-# 2. RANDOM GREETINGS
+if (( NO_COLOR )); then
+    TEXT_COLOR=""
+    ACCENT_COLOR=""
+    RESET=""
+fi
+
+# ==========================================
+# 4. RANDOM GREETINGS
+# ==========================================
+
 GREETINGS=(
     "new bleood drop"
     "ai dropdihing"
@@ -35,7 +191,10 @@ GREETINGS=(
 
 RAND_GREET="${GREETINGS[RANDOM % ${#GREETINGS[@]}]}"
 
-# 3. RANDOM BORDERS
+# ==========================================
+# 5. RANDOM BORDERS
+# ==========================================
+
 BORDERS_TOP=(
     "┌─────┐"
     "┏━━━━━┓"
@@ -56,104 +215,179 @@ BORDER_IDX=$((RANDOM % ${#BORDERS_TOP[@]}))
 B_TOP="${BORDERS_TOP[BORDER_IDX]}"
 B_BOT="${BORDERS_BOT[BORDER_IDX]}"
 
-# 4. RANDOM LAYOUT
-LAYOUT_NUM=$((1 + RANDOM % 3))
+# ==========================================
+# 6. LAYOUT
+# ==========================================
 
-case "$LAYOUT_NUM" in
-    1)
-        echo -e "${ACCENT_COLOR}${B_TOP}${RESET}"
-        echo -e " ${TEXT_COLOR}📡 $RAND_GREET${RESET}"
-        echo -e "  User: $(whoami) @ $(hostname)"
-        echo -e "${ACCENT_COLOR}${B_BOT}${RESET}"
-        ;;
+if [[ -n "$FORCED_LAYOUT" ]]; then
+    LAYOUT_NUM="$FORCED_LAYOUT"
+else
+    LAYOUT_NUM=$((1 + RANDOM % 3))
+fi
 
-    2)
-        echo -e "${TEXT_COLOR}⚡ $RAND_GREET ⚡${RESET}"
-        echo -e "${ACCENT_COLOR}_━_-_-_-_-_${RESET}"
-        echo -e "  User: \e[1m$(whoami)\e[0m | Time: \e[2m$(date +'%H:%M:%S')\e[0m"
-        ;;
+if (( MINIMAL )); then
+    printf "${TEXT_COLOR}%s${RESET}\n" "$RAND_GREET"
+    printf "  %s@%s\n" "$(whoami)" "$(hostname)"
+else
+    case "$LAYOUT_NUM" in
+        1)
+            printf "${ACCENT_COLOR}%s${RESET}\n" "$B_TOP"
+            printf " ${TEXT_COLOR}📡 %s${RESET}\n" "$RAND_GREET"
+            printf "  User: %s @ %s\n" "$(whoami)" "$(hostname)"
+            printf "${ACCENT_COLOR}%s${RESET}\n" "$B_BOT"
+            ;;
+        2)
+            printf "${TEXT_COLOR}⚡ %s ⚡${RESET}\n" "$RAND_GREET"
+            printf "${ACCENT_COLOR}_━_-_-_-_-_${RESET}\n"
+            printf "  User: %s | Time: %s\n" \
+                "$(whoami)" "$(date +'%H:%M:%S')"
+            ;;
+        3)
+            printf "${ACCENT_COLOR}[>>>]${RESET} ${TEXT_COLOR}%s${RESET}\n" "$RAND_GREET"
+            printf "  > ACCESSING: /home/%s\n" "$(whoami)"
+            printf "  > TIMESTAMP: %s\n" "$(date +'%Y-%m-%d')"
+            ;;
+    esac
+fi
 
-    3)
-        echo -e "${ACCENT_COLOR}[>>>]${RESET} ${TEXT_COLOR}${RAND_GREET}${RESET}"
-        echo -e "  > ACCESSING: /home/$(whoami)"
-        echo -e "  > TIMESTAMP: $(date +'%Y-%m-%d')"
-        ;;
-esac
+printf "\n"
 
-echo ""
+# ==========================================
+# 7. PATTERN SETTINGS
+# ==========================================
 
-# 5. RANDOM PATTERN SETTINGS
-PATTERN_TYPE=$((1 + RANDOM % 4))
+if [[ -n "$FORCED_PATTERN" ]]; then
+    PATTERN_TYPE="$FORCED_PATTERN"
+else
+    PATTERN_TYPE=$((1 + RANDOM % 10))
+fi
+
 ROWS=$((3 + RANDOM % 3))
-COLS=40
 
-# 6. RANDOM VISUAL PATTERNS
-case "$PATTERN_TYPE" in
+# Detect terminal width, with fallback
+COLS=$(tput cols 2>/dev/null || echo 40)
 
-    # Digital Matrix Blocks
-    1)
-        CHAR_SET=("░" "▒" "▓" "█" "▀" "▄" " ")
+# Leave some padding
+COLS=$((COLS - 4))
 
-        for ((i = 0; i < ROWS; i++)); do
-            line="  "
+# Avoid absurdly narrow output
+if (( COLS < 10 )); then
+    COLS=10
+fi
 
+# ==========================================
+# 8. PATTERN ENGINE
+# ==========================================
+
+for ((i = 0; i < ROWS; i++)); do
+    line="  "
+
+    case "$PATTERN_TYPE" in
+
+        # Matrix blocks
+        1)
+            CHAR_SET=("░" "▒" "▓" "█" "▀" "▄" " ")
             for ((j = 0; j < COLS; j++)); do
-                char="${CHAR_SET[RANDOM % ${#CHAR_SET[@]}]}"
-                line+="$char"
+                line+="${CHAR_SET[RANDOM % ${#CHAR_SET[@]}]}"
             done
+            ;;
 
-            echo -e "\e[$((RANDOM % 2));$((31 + RANDOM % 6))m${line}${RESET}"
-        done
-        ;;
-
-    # Retro Vaporwave Waves & Slashes
-    2)
-        CHAR_SET=("/" "\\" "|" "_" "-" "~" " ")
-
-        for ((i = 0; i < ROWS; i++)); do
-            line="  "
-
+        # Vaporwave
+        2)
+            CHAR_SET=("/" "\\" "|" "_" "-" "~" " ")
             for ((j = 0; j < COLS; j++)); do
-                char="${CHAR_SET[RANDOM % ${#CHAR_SET[@]}]}"
-                line+="$char"
+                line+="${CHAR_SET[RANDOM % ${#CHAR_SET[@]}]}"
             done
+            ;;
 
-            echo -e "${ACCENT_COLOR}${line}${RESET}"
-        done
-        ;;
-
-    # Abstract Starfield / Circuit Board
-    3)
-        CHAR_SET=("." "*" "+" "o" "•" " " " " " ")
-
-        for ((i = 0; i < ROWS; i++)); do
-            line="  "
-
+        # Starfield
+        3)
+            CHAR_SET=("." "*" "+" "o" "•" " " " " " ")
             for ((j = 0; j < COLS; j++)); do
-                char="${CHAR_SET[RANDOM % ${#CHAR_SET[@]}]}"
-                line+="$char"
+                line+="${CHAR_SET[RANDOM % ${#CHAR_SET[@]}]}"
             done
+            ;;
 
-            echo -e "${TEXT_COLOR}${line}${RESET}"
-        done
-        ;;
+        # Glitch strips
+        4)
+            STRIPS=(
+                "██████▒▒▒▒▒"
+                "░░░░░▓▓▓▓▓"
+                "▄▄▄▄▄▀▀▀▀▀"
+                "━━━━━╳╳╳╳╳"
+            )
+            line="${STRIPS[RANDOM % ${#STRIPS[@]}]}${STRIPS[RANDOM % ${#STRIPS[@]}]}"
+            ;;
 
-    # Modern Glitch Strips
-    4)
-        STRIPS=(
-            "██████▒▒▒▒▒"
-            "░░░░░▓▓▓▓▓"
-            "▄▄▄▄▄▀▀▀▀▀"
-            "━━━━━╳╳╳╳╳"
-        )
+        # Checkerboard
+        5)
+            for ((j = 0; j < COLS; j++)); do
+                if (( (i + j) % 2 == 0 )); then
+                    line+="▓"
+                else
+                    line+="░"
+                fi
+            done
+            ;;
 
-        for ((i = 0; i < ROWS; i++)); do
-            strip1="${STRIPS[RANDOM % ${#STRIPS[@]}]}"
-            strip2="${STRIPS[RANDOM % ${#STRIPS[@]}]}"
+        # Wave
+        6)
+            for ((j = 0; j < COLS; j++)); do
+                if (( (j + i * 3) % 8 < 4 )); then
+                    line+="~"
+                else
+                    line+=" "
+                fi
+            done
+            ;;
 
-            echo -e "  \e[$((RANDOM % 2));$((31 + RANDOM % 6))m${strip1}${strip2}${RESET}"
-        done
-        ;;
-esac
+        # Gradient
+        7)
+            CHAR_SET=(" " "." ":" "-" "=" "+" "*" "#" "@" )
+            for ((j = 0; j < COLS; j++)); do
+                idx=$((j * ${#CHAR_SET[@]} / COLS))
+                line+="${CHAR_SET[idx]}"
+            done
+            ;;
 
-echo ""
+        # Sparse noise
+        8)
+            CHAR_SET=(" " " " " " "." "*" "+" "x" "o" "#" )
+            for ((j = 0; j < COLS; j++)); do
+                line+="${CHAR_SET[RANDOM % ${#CHAR_SET[@]}]}"
+            done
+            ;;
+
+        # Geometric
+        9)
+            for ((j = 0; j < COLS; j++)); do
+                if (( (j + i) % 6 == 0 )); then
+                    line+="◆"
+                elif (( (j + i) % 6 == 3 )); then
+                    line+="◇"
+                else
+                    line+=" "
+                fi
+            done
+            ;;
+
+        # Braille noise
+        10)
+            CHAR_SET=("⠁" "⠃" "⠇" "⠏" "⠟" "⠿" "⠾" "⠷" " ")
+            for ((j = 0; j < COLS; j++)); do
+                line+="${CHAR_SET[RANDOM % ${#CHAR_SET[@]}]}"
+            done
+            ;;
+    esac
+
+    # Randomized color for each row
+    ROW_COLOR="${COLORS[RANDOM % ${#COLORS[@]}]}"
+
+    if (( NO_COLOR )); then
+        printf "%s\n" "$line"
+    else
+        printf "\e[0;%sm%s\e[0m\n" "$ROW_COLOR" "$line"
+    fi
+done
+
+printf "\n"
